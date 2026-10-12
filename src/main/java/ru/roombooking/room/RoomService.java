@@ -1,45 +1,39 @@
 package ru.roombooking.room;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@Transactional(readOnly = true)
 public class RoomService {
 
-    private final Map<String, Room> rooms= new ConcurrentHashMap<>();
+    private final RoomRepository roomRepository;
 
-    public Room createRoom(String name, int capacity){
-
-        String id = UUID.randomUUID().toString();
-
-        Room room = new Room(id, name, capacity);
-
-        rooms.put(id, room);
-
-        return room;
+    public RoomService(RoomRepository roomRepository) {
+        this.roomRepository = roomRepository;
     }
 
-    public List<Room> getAllRooms(){
-        return List.copyOf(rooms.values());
+    @Transactional
+    public Room createRoom(String name, int capacity) {
+        Room room = new Room(name, capacity);
+
+        return roomRepository.save(room);
     }
 
-    public Room getRoomById(String id){
-        if (id == null || id.isBlank()){
+    public List<Room> getAllRooms() {
+        return roomRepository.findAll();
+    }
+
+    public Room getRoomById(String id) {
+        if (id == null || id.isBlank()) {
             throw new IllegalArgumentException(
-                    "Id помещения не может быть пустым"
+                    "ID помещения не должен быть пустым"
             );
         }
 
-        Room room = rooms.get(id);
-
-        if (room == null){
-            throw new RoomNotFoundException(id);
-        }
-
-        return room;
+        return roomRepository.findById(id)
+                .orElseThrow(() -> new RoomNotFoundException(id));
     }
 }
